@@ -1,9 +1,10 @@
 ﻿using Core.Entities;
 
-namespace Core.Services
+namespace Infrastructure.Services
 {
     public interface ISaleService
     {
+        //FR4 : Add the sale of an existing beer to an existing wholesaler
         void AddSale(int wholesalerId, int beerId, int quantity);
     }
 }

@@ -2,13 +2,11 @@
 
 namespace Core.Entities
 {
-    public class Brewer
+    public class Brewer : BaseEntity
     {
-        [Required]
-        public int Id { get; set; }
+        
         [Required]
         public string Name { get; set; }
 
-        public ICollection<Beer>? Beers { get; set; }
     }
 }

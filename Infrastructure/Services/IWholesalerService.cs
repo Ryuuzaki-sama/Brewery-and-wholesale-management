@@ -1,10 +1,14 @@
 ﻿using Core.Entities;
 
-namespace Core.Services
+namespace Infrastructure.Services
 {
     public interface IWholesalerService
     {
-        void UpdateBeerStock(int wholesalerId, int beerId, int newQuantity);
-        // QuoteResult RequestQuote(int wholesalerId, List<OrderItem> orderItems);
+        // FR4
+        Task<Sale> AddSaleBeerisStock(int wholesalerId, int beerId, int newQuantity);
+        //FR5
+        Task<Wholesaler> UpdateBeerStock(int wholesalerId, int beerId, int newQuantity);
+        //FR6
+        Task<Quote> RequestQuote(int wholesalerId, List<OrderItem> orderItems);
     }
 }

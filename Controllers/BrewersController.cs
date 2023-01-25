@@ -8,44 +8,39 @@ namespace Brewery_and_wholesale_management.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class BrewersController : ControllerBase
+    public class BrewerController : ControllerBase
     {
         private readonly BeerDbContext _context;
 
-        public BrewersController(BeerDbContext context)
+        public BrewerController(BeerDbContext context)
         {
             this._context = context;
         }
-
+        
         [HttpGet]
-        public async Task< ActionResult<List <Brewer>>> getBrewerys()
+        public async Task<ActionResult<List<Brewer>>> getBrewerys()
         {
             var brewer = await _context.Brewers.ToListAsync();
             return Ok(brewer);
         }
-
-        [HttpGet]
-        public async Task<ActionResult<Beer>> GetBeersByBrewery(int breweryId)
+        /*
+        [HttpGet("{breweryId}")]
+        public async Task<ActionResult<Brewer>> GetBeersByBrewery(int breweryId)
         {
             //return _context.GetBeersByBrewery(breweryId);
-            return await _context.Beers.FindAsync(breweryId);
+            return await _context.Brewers.FindAsync(breweryId);
         }
+        */
 
         [HttpPost]
-        public ActionResult<Brewer> AddBrewery([FromBody] Brewer brewer)
+        public async Task<IActionResult> AddBrewery([FromBody] Brewer brewer)
         {
             _context.Brewers.Add(brewer);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(getBrewerys), new { id = brewer.Id }, brewer);
         }
         /*
-        [HttpPost]
-        public IHttpActionResult AddBeer(Beer beer)
-        {
-            _context.AddBeer(beer);
-            return Ok();
-        }
-
+        
         [HttpDelete]
         public IHttpActionResult DeleteBeer(int beerId)
         {

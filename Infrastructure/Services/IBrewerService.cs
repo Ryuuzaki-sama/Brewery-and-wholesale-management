@@ -1,6 +1,6 @@
 ﻿using Core.Entities;
 
-namespace Core.Services
+namespace Infrastructure.Services
 {
     public interface IBrewerService
     {

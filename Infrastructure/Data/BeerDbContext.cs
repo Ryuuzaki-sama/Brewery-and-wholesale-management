@@ -1,5 +1,6 @@
 ﻿using Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 namespace Infrastructure.Data
 {
@@ -13,13 +14,13 @@ namespace Infrastructure.Data
         public DbSet<Brewer> Brewers { get; set; }
         public DbSet<Wholesaler> Wholesalers { get; set; }
         public DbSet<Sale> Sales { get; set; }
-        // protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //modelBuilder.Entity<Beer>()
-        //      .HasOne(b => b.Brewer)
-        //    .WithMany(b => b.Beers)
-        //  .HasForeignKey(b => b.BrewerId);
-        //}
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            
+        }
 
     }
 }

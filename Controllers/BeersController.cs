@@ -3,6 +3,7 @@ using Core.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Core.Interfaces;
 
 namespace Brewery_and_wholesale_management.Controllers
 {
@@ -10,39 +11,55 @@ namespace Brewery_and_wholesale_management.Controllers
     [ApiController]
     public class BeersController : ControllerBase
     {
-        private readonly BeerDbContext _context;
+        private readonly IBeerRepository _context;
+        private readonly BeerDbContext _repo;
 
-        public BeersController(BeerDbContext context)
+        public BeersController(IBeerRepository context, BeerDbContext repo)
         {
             this._context = context;
+            this._repo = repo;
         }
-
-        [HttpGet]
-        public ActionResult<Beer> GetBeer()
+        // FR1- List all the beers by brewery
+        [HttpGet("{BrewerId}")]
+        public async Task<IReadOnlyList<Beer>> GetBeer(int BrewerId)
         {
-           
-            return Ok(_context.Beers.ToList());
+
+            return await _context.GetBeersBybrewerAsync(BrewerId);
         }
 
-
+        //FR2- A brewer can add new beer
         [HttpPost]
-        public ActionResult<Beer> AddBear([FromBody] Beer beer)
+        public async Task<ActionResult> AddBeer([FromBody] Beer beer)
         {
-            _context.Beers.Add(beer);
-            _context.SaveChanges();
-            return CreatedAtAction(nameof(GetBeer), new { id = beer.Id }, beer);
-        }
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-        [HttpDelete]
-        public ActionResult<Beer> DeleteBeer(int id)
+            var brewer = await _repo.Brewers.FindAsync(beer.BrewerId);
+
+            if (brewer == null)
+            {
+                return NotFound();
+            }
+
+            _repo.Beers.Add(beer);
+            await _repo.SaveChangesAsync();
+
+            return CreatedAtAction(null, new { id = beer.Id }, beer);
+
+        }
+        //FR3- A brewer can delete a beer
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBeer(int id)
         {
-            var beer = _context.Beers.Find(id);
+            var beer = _repo.Beers.Find(id);
             if(beer == null)
             {
                 return NotFound();
             }
-            _context.Beers.Remove(beer);
-            _context.SaveChanges();
+            _repo.Beers.Remove(beer);
+            await _repo.SaveChangesAsync();
             return NoContent();
         }
     }
