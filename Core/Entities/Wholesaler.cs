@@ -2,13 +2,15 @@
 
 namespace Core.Entities
 {
-    public class Wholesaler
+    public class Wholesaler : BaseEntity
     {
-        public int Id { get; set; }
         public string Name { get; set; }
-        public ICollection<Stock> Stock { get; set; }
+        public ICollection<Stock>? Stock { get; set; }
         public ICollection<Sale>? Sales { get; set; }
-        public int BrewerId { get; set; }
+
+        public int BeerId { get; set; }
+
+        public List<Beer> Beers { get; set; }
 
 
     }

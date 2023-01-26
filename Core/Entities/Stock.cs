@@ -1,14 +1,19 @@
-﻿namespace Core.Entities
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Core.Entities
 {
     public class Stock
     {
         public int Id { get; set; }
+        [Required]
         public int WholesalerId { get; set; }
-        public Wholesaler Wholesaler { get; set; }
+        [Required]
         public int BeerId { get; set; }
-        public Beer Beer { get; set; }
-        public int Quantity { get; set; }
-        public float Price { get; set; }
+
+        [Required]
+        public int QuantityStock { get; set; }
+        [Required]
+        public decimal PriceStock { get; set; }
 
     }
 }

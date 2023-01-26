@@ -6,13 +6,9 @@ namespace Core.Entities
     {
         public int Id { get; set; }
         public int WholesalerId { get; set; }
-        public Wholesaler Wholesaler { get; set; }
         public int BeerId { get; set; }
-        public Beer Beer { get; set; }
-        public int Quantity { get; set; }
-        public float Price { get; set; }
-
-        public float Discount { get; set; }
+        public int QuantitySale { get; set; }
+        public decimal PriceSale { get; set; }
 
 
     }

@@ -14,6 +14,7 @@ namespace Infrastructure.Data
         public DbSet<Brewer> Brewers { get; set; }
         public DbSet<Wholesaler> Wholesalers { get; set; }
         public DbSet<Sale> Sales { get; set; }
+        public DbSet<Stock> Stocks { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
