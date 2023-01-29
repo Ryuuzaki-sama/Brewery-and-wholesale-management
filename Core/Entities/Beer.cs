@@ -9,9 +9,13 @@ namespace Core.Entities
         public double Alcohol_content { get; set; }
         [Required]
         public decimal Price { get; set; }
+        public int QuantityLimit { get; set; }
 
         public int BrewerId { get; set; }
-        public Brewer? Brewer { get; set; }
-        
+        public Brewer Brewer { get; set; }
+
+        public int WholesalerId { get; set; }
+
+
     }
 }

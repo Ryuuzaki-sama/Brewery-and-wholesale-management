@@ -4,32 +4,39 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using System.Data;
+using Core.DTOs;
+using Brewery_and_wholesale_management.DTOs;
+using AutoMapper;
 
 namespace Brewery_and_wholesale_management.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class BeersController : ControllerBase
+    public class BeersController : BaseApiController
     {
         private readonly IBeerRepository _context;
         private readonly BeerDbContext _repo;
+        private readonly IMapper _mapper;
 
-        public BeersController(IBeerRepository context, BeerDbContext repo)
+        public BeersController(IBeerRepository context, BeerDbContext repo, IMapper mapper)
         {
             this._context = context;
             this._repo = repo;
+            _mapper = mapper;
         }
         // FR1- List all the beers by brewery
         [HttpGet("{BrewerId}")]
-        public async Task<IReadOnlyList<Beer>> GetBeer(int BrewerId)
+        public async Task<ActionResult<IReadOnlyList<BeerDTO>>> GetBeer(int BrewerId)
         {
 
-            return await _context.GetBeersBybrewerAsync(BrewerId);
+            var listBeerByBrewer = await _context.GetBeersBybrewerAsync(BrewerId);
+
+            return Ok(_mapper.Map<IReadOnlyList<Beer>, IReadOnlyList<BeerDTO>>(listBeerByBrewer));
         }
 
         //FR2- A brewer can add new beer
-        [HttpPost]
-        public async Task<ActionResult> AddBeer([FromBody] Beer beer)
+        [HttpPost, Authorize(Roles = "Brewer")]
+        public async Task<ActionResult<Beer>> AddBeer([FromBody] Beer beer)
         {
             if (!ModelState.IsValid)
             {
@@ -50,7 +57,7 @@ namespace Brewery_and_wholesale_management.Controllers
 
         }
         //FR3- A brewer can delete a beer
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}"), Authorize(Roles = "Brewer")]
         public async Task<IActionResult> DeleteBeer(int id)
         {
             var beer = _repo.Beers.Find(id);

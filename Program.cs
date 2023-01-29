@@ -1,3 +1,4 @@
+using Brewery_and_wholesale_management.Helpers;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,7 @@ IConfiguration configuration;
 // Add services to the container.
 builder.Services.AddScoped<IBeerRepository, BeerRepository>();
 //builder.Services.AddScoped<IWholesolerRepository, WholesolerRepository>();
-
+builder.Services.AddAutoMapper(typeof(MappingProfiles));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -29,7 +30,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseStatusCodePagesWithReExecute("/errors/{0}");
+
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

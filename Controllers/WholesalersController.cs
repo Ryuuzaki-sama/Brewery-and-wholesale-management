@@ -4,25 +4,38 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
-using Brewery_and_wholesale_management.DTOs;
+using Core.DTOs;
 using Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
+using AutoMapper;
+using Brewery_and_wholesale_management.DTOs;
+using Brewery_and_wholesale_management.Core.Interfaces;
+using Core.Interfaces;
 
 namespace Brewery_and_wholesale_management.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class WholesalersController : ControllerBase
+    public class WholesalersController : BaseApiController
     {
         private readonly BeerDbContext _context;
+        private readonly IBeerRepository _Beercontext;
+        private readonly IMapper _mapper;
 
-        public WholesalersController(BeerDbContext context)
+        private readonly IWholesalerService _wholesalerService;
+
+        public WholesalersController(BeerDbContext context, IMapper mapper, IBeerRepository Beercontext, IWholesalerService wholesalerService)
         {
             this._context = context;
+            this._mapper = mapper;
+            this._Beercontext = Beercontext;
+            _wholesalerService = wholesalerService;
         }
 
         [HttpGet]
-        
-        public async Task<IReadOnlyList<Wholesaler>> GetWholesalers() {
+
+        public async Task<IReadOnlyList<Wholesaler>> GetWholesalers()
+        {
 
             return await _context.Wholesalers.ToListAsync();
         }
@@ -31,29 +44,29 @@ namespace Brewery_and_wholesale_management.Controllers
         public async Task<ActionResult> AddWholesaler([FromBody] Wholesaler wholesaler)
         {
             _context.Wholesalers.Add(wholesaler);
-           await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return CreatedAtAction(null, new { id = wholesaler.Id }, wholesaler);
         }
 
         [HttpGet("sales/{WholesalerId}")]
-        public ActionResult<Sale> GetSales(int WholesalerId)
+        public ActionResult<SalesDto> GetSales(int WholesalerId)
         {
             //.Where(x => x.WholesalerId == WholesalerId)
             return Ok(_context.Sales.ToList());
         }
         // FR4- Add the sale of an existing beer to an existing wholesaler
-        [HttpPost("add-sale/{wholesalerId}/{beerId}")]
+        [HttpPost("addsale/{wholesalerId}/{beerId}"), Authorize(Roles = "Brewer")]
         public async Task<ActionResult> AddSale([FromBody] Sale sale, int beerId, int wholesalerId)
         {
             // Find the beer and the wholesaler in the database
             var dbStock = _context.Stocks.FirstOrDefault(s => s.WholesalerId == wholesalerId && s.BeerId == beerId);
-            var dbbeer = _context.Beers.FirstOrDefault(b => b.Id== beerId);
+            var dbbeer = _context.Beers.FirstOrDefault(b => b.Id == beerId);
             var dbWholesaler = _context.Wholesalers.Include(w => w.Beers).FirstOrDefault(w => w.Id == wholesalerId);
 
             // Check if the beer and the wholesaler exist
             if (dbStock == null || dbWholesaler == null)
             {
-                return BadRequest("Wholesaler or beer does not exist in the stock") ;
+                return BadRequest("Wholesaler or beer does not exist in the stock");
             }
 
             // Check if the wholesaler already sells the beer
@@ -75,99 +88,61 @@ namespace Brewery_and_wholesale_management.Controllers
                 WholesalerId = wholesalerId,
                 BeerId = beerId,
                 QuantitySale = sale.QuantitySale,
-                PriceSale = dbbeer.Price,
+                PriceSale = dbbeer.Price * sale.QuantitySale,
             };
-            _context.Add(sale);
+            _context.Sales.Add(sale);
             await _context.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetSales), new { id = sale.Id }, sale);
         }
 
         // FR5- A wholesaler can update the remaining quantity of a beer in his stock.
 
-        
-        [HttpPut("update-stock/{wholesalerId}/{beerId}")]
+
+        [HttpPut("updatestock/{wholesalerId}/{beerId}"), Authorize(Roles = "Wholesaler")]
         public async Task<ActionResult> UpdateStock(int beerId, int wholesalerId, int newquantity)
         {
             // Find the beer and the wholesaler in the database
             var dbBeer = _context.Beers.FirstOrDefault(b => b.Id == beerId);
             var dbStock = _context.Stocks.FirstOrDefault(s => s.WholesalerId == wholesalerId && s.BeerId == beerId);
             var dbWholesaler = _context.Wholesalers.Include(w => w.Beers).FirstOrDefault(w => w.Id == wholesalerId);
-
             // Check if the beer and the wholesaler exist
             if (dbBeer == null || dbWholesaler == null)
             {
                 return BadRequest("The beer or wholesalers does not exist"); ;
             }
-            if(dbStock == null)
-            {
-                return BadRequest("There is no stock for the chosen wholesaler");
-            }
-
             // Check if the wholesaler already sells the beer
             if (!dbWholesaler.Beers.Any(b => b.Id == dbBeer.Id))
             {
                 return BadRequest("The wholesaler does not have the chosen beer in the stock"); ;
             }
-
             // Update the stock
             dbStock.QuantityStock = newquantity;
             _context.Stocks.Update(dbStock);
             await _context.SaveChangesAsync();
 
             return Ok(dbStock);
-            
-        }
 
-        
+        }
 
         // FR6- A client can request a quote from a wholesaler, 2 scenarios:
-
-        /*
-         [HttpGet]
-    public async Task<IActionResult> RequestQuote(List<BeerDto> beers, WholesalerDto wholesaler, int quantity)
-    {
-        if (beers.Count() == 0)
+        [HttpGet("requestQuote/quote/{wholesalerId}"), Authorize()]
+        public async Task<ActionResult> RequestQuote(List<BeerDTO> beers, int quantity, List<OrderItem> orderItems, int wholesalerId, WholesalerDto wholesalerdto)
         {
-            return BadRequest("Order cannot be empty");
-        }
+            var wholesaler = _context.Wholesalers.Find(wholesalerId);
 
-        if (beers.GroupBy(x => x.Id).Any(g => g.Count() > 1))
-        {
-            return BadRequest("There can't be any duplicate in the order");
-        }
-        // check if wholesaler exists
-        // check if the number of beers ordered is not greater than the wholesaler's stock
-        // check if the beer is sold by the wholesaler
-        var quote = await _wholesalerService.RequestQuote(beers, wholesaler, quantity);
+            if (beers.Count() == 0)
+            {
+                return BadRequest("Order cannot be empty");
+            }
 
-        if (quantity > 20)
-        {
-            quote.Discount = 0.2;
-        }
-        else if (quantity > 10)
-        {
-            quote.Discount = 0.1;
-        }
-
-        return Ok(quote);
-    }
-         */
-        [HttpGet("wholesalers/{wholesalerId}/quote")]
-        public ActionResult<Quote> RequestQuote(int wholesalerId,[FromBody] List<OrderItem> orderItems)
-        {
-
-            // 1- If successful, the method returns a price and a summary of the quote.
-
-
-            // 10% Discount
-
-
-            // 20% Discount
-
-            //If there is an error, it returns an exception and a message to explain the reason
+            if (beers.GroupBy(x => x.Id).Any(g => g.Count() > 1))
+            {
+                return BadRequest("There can't be any duplicate in the order");
+            }
 
             //The wholesaler must exist
-            var wholesaler = _context.Wholesalers.Find(wholesalerId);
+
             if (wholesaler == null)
             {
                 return NotFound("The wholesaler does not exist.");
@@ -182,26 +157,21 @@ namespace Brewery_and_wholesale_management.Controllers
             //There can't be any duplicate in the order
             var distinctItems = orderItems.GroupBy(x => x.BeerId).Select(g => g.First()).ToList();
 
-            if(distinctItems.Count != orderItems.Count)
+            if (distinctItems.Count != orderItems.Count)
             {
                 return BadRequest("There can't be any duplicate in the order");
             }
 
-            // The number of beers ordered cannot be greater than the wholesaler's stock
-
-
-            //The beer must be sold by the wholesaler
+            var quote = await _wholesalerService.RequestQuote(beers, wholesalerdto, quantity);
 
 
             float totalPrice = 0;
             float discount = 0;
-           
 
-            var quote = new Quote() { Price = totalPrice - discount, Discount = discount, Summary = "Your Quote has been generated successfully." };
+
+            quote = new Quote() { Price = Convert.ToInt32(totalPrice * quote.Discount), Discount = quote.Discount, Summary = "Your Quote has been generated successfully." };
 
             return Ok(quote);
         }
-
-
     }
 }
